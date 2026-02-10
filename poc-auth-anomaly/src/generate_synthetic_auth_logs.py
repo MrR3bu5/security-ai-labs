@@ -55,7 +55,6 @@ def random_ip_from_cidr(rng: random.Random, cidr: str) -> str:
 
 
 def random_timestamp(rng: random.Random, start: datetime, end: datetime, prefer_hours: Tuple[int, int] | None) -> datetime:
-    # pick a random day, then a time; optionally bias toward prefer_hours
     total_seconds = int((end - start).total_seconds())
     base = start + timedelta(seconds=rng.randint(0, total_seconds))
 
@@ -73,7 +72,6 @@ def random_timestamp(rng: random.Random, start: datetime, end: datetime, prefer_
 
 
 def build_user_profiles() -> List[UserProfile]:
-    # Keep this small and readable; enough to show behavioral baselines.
     return [
         UserProfile("alice", "US", (8, 17), 0.97, ["10.10.10.0/24", "192.168.10.0/24"]),
         UserProfile("bob", "US", (7, 16), 0.96, ["10.10.20.0/24", "192.168.20.0/24"]),
@@ -112,10 +110,8 @@ def generate_normal_events(
 
         source_ip = random_ip_from_cidr(rng, rng.choice(u.known_ip_blocks))
 
-        # normal: mostly home country; some travel/remote
         country = u.home_country if rng.random() < 0.92 else rng.choice(["US", "CA", "GB", "DE", "FR", "AU", "JP"])
-
-        # success mostly follows per-user rate; failures happen
+      
         success = rng.random() < u.success_rate
         result = "SUCCESS" if success else "FAILURE"
 
@@ -173,7 +169,7 @@ def inject_anomalies(
             }
         )
 
-    # 2) Brute-force then success (common SOC storyline)
+    # 2) Brute-force then success
     victim = "carol"
     base = start + timedelta(hours=rng.randint(60, 90))
     brute_ip = random_ip_from_cidr(rng, "45.33.0.0/16")  # public-ish looking
@@ -233,7 +229,7 @@ def inject_anomalies(
         }
     )
 
-    # Tag the injected anomalies (helpful for evaluation later)
+    # Tag the injected anomalies
     for a in anomalies:
         a["is_injected_anomaly"] = "true"
     for e in events:
@@ -246,7 +242,6 @@ def inject_anomalies(
 
 def write_csv(path: Path, rows: List[Dict[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    # Ensure consistent columns
     fieldnames = [
         "timestamp_utc",
         "username",
@@ -262,7 +257,6 @@ def write_csv(path: Path, rows: List[Dict[str, str]]) -> None:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
         for r in rows:
-            # fill missing
             for k in fieldnames:
                 r.setdefault(k, "")
             w.writerow({k: r.get(k, "") for k in fieldnames})
